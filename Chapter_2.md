@@ -355,3 +355,10 @@ File lookup
   - Writes: go to upperdir
   - Deletes: whiteout in upperdir hides lowerdir file
 ```
+
+## Sharing image layers 
+* images can share layers, leading to efficiencies in space and performance.
+   <p align="center">
+    <img src="Images/img5.png" alt="alt text" width="400" style="transform: translateX(-200px);" />
+   </p>
+    
