@@ -217,6 +217,52 @@
      <img src="Images/img2.png" alt="alt text" width="400" style="transform: translateX(-200px);" />
     </p>
 
+# What is a layer?
+
+* A layer is a snapshot of filesystem changes, stored as compressed tar archives on disk or in a 
+  registry. It contains:
+    1. The actual files (new or modified) → yes, the real file data is stored.
+    2. Metadata about deletions (whiteouts) → so Docker knows to “hide” files from lower layers.
+    3. Directory structure → so paths exist correctly.
+* Each layer is identified by a content hash (digest).
+* A layer is immutable. You can't modify a layer after creating it.
+* A layer is not just a blueprint (like a recipe). It’s the actual binary diff of the filesystem at that step. Docker images are built from these diffs stacked together.
+* Example: Given this DockerFile
+  ```bash
+  FROM alpine:3.18
+  RUN echo "hello" > /file1
+  RUN echo "world" > /file2
+  ```
+  * Step_1: `FROM alpine:3.18`
+    * Docker pulls the base image alpine:3.18.
+    * That base image already has several layers (the minimal Alpine Linux filesystem).
+    * Let’s say Alpine has Layers A1,A2,A3.
+    * Layer A1 = the first layer of your image.
+  * Step_2: `RUN echo "hello" > /file1`
+    * Docker starts a temporary container from Layers A1+A2+A3.
+    * Runs the command → creates /file1.
+    * Docker commits the filesystem diff:
+      * New file /file1 (content "hello").
+    * Layer B is created → contains /file1
+  * Step 3: `RUN echo "world" > /file2`
+    * Docker again starts a container from Layers A1+A2+A3 + B
+    * Runs the command → creates /file2.
+    * Docker commits the filesystem diff:
+      * New file /file2 (content "world")
+    * Layer C is created → contains /file2. 
+
+  * Final Image:
+    * The image now has 5 layers (A1+A2+A3 + B + C)
+    * When you run a container, Docker uses OverlayFS to stack them
+    * If you cat /file1, the kernel reads it from Layer B.
+    * If you cat /file2, it comes from Layer C.
+    * If you modify /file1 inside the container, the change goes into the writable container layer, not back into Layer B. (More on this later)
+   
+* Key takeaway:
+  * Each Dockerfile instruction = 1 new layer (or layers).
+  * That layer = "the filesystem changes made by that instruction."
+  * Layers stack to form the full image.
+   
 
 
 
