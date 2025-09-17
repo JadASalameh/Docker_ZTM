@@ -263,6 +263,95 @@
   * That layer = "the filesystem changes made by that instruction."
   * Layers stack to form the full image.
    
+## The Full Picture
 
+### 1. What is a Layer? 
+* A layer = the filesystem changes (add/modify/delete files) produced by a single Dockerfile instruction.
+* It contains the actual files (not just a blueprint) + deletion markers (whiteouts)
+* Layers are:
+  * Immutable (never change once created).
+  * Read-only (containers can’t modify them).
+  * Shared (different images can reuse the same layer).
+* Example: `RUN echo "hello" > /file1`
+  * This creates a new layer containing just `/file1`.
+    
+### 2. What is an image?
+* A Docker image = metadata + layers.
+* Layers: read-only filesystem diffs.
+* Metadata: JSON config that says:
+  * Which layers belong to this image (by SHA256 digest).
+  * In what order to stack them.
+  * Runtime info: default command (CMD), entrypoint, env vars, exposed ports, etc.
+* The image itself is not one big file. It’s a manifest pointing to multiple layers.
 
+```bash
+Image: nginx:alpine
+ ├── Metadata (config.json, manifest.json)
+ ├── Layer 1 (Alpine root filesystem)
+ ├── Layer 2 (libs + nginx binaries)
+ └── Layer 3 (config adjustments)
+```
 
+### 3. Containers and Layers
+
+* Docker takes the image layers (read-only).
+* Adds a thin writable container layer on top.
+* All changes (logs, temp files, writes) go into that writable layer.
+* Once the container is removed, that writable layer is gone.
+```bash
+Container filesystem:
+ ├── Image layers (read-only, stacked)
+ └── Container layer (writable, temporary)
+```
+
+### 4. Storage
+
+* Locally:
+  * Layers stored under /var/lib/docker/overlay2/ (or similar).
+  *  Metadata stored in /var/lib/docker/image/.
+* In registries (like Docker Hub):
+  * Layers are stored as blobs (`sha256:...`).
+  * Metadata is stored as JSON manifests/configs.
+
+### 5. Running a Container
+* When you docker run an image:
+  * Lowerdirs: All image layers (read-only) become the lowerdirs directory
+    ```bash
+    /var/lib/docker/overlay2/<layer1>/diff
+    /var/lib/docker/overlay2/<layer2>/diff
+    /var/lib/docker/overlay2/<layer3>/diff
+    ```
+  * Upperdir: Docker creates a new empty writable directory for this container:
+    ```bash
+    /var/lib/docker/overlay2/<container-id>/diff
+    ```
+  * Overlay mount: The Linux kernel (via OverlayFS, overlay2 driver) merges them into a single view:
+    ```bash
+    lowerdir = image layers
+    upperdir = container writable layer
+    merged   = unified filesystem the process sees
+    workdir  = scratch area for OverlayFS
+    ```
+* Inside the container, when a process accesses a file:
+  * Kernel first checks upperdir (container layer).
+  * If file isn’t there, it checks lowerdirs (image layers, top → bottom).
+  * If file was deleted, a whiteout marker in upperdir hides it.
+  * To you inside the container: it looks like one normal filesystem `/`.
+  * To the kernel: it’s a merged mount that pulls from multiple dirs.
+
+```bash
+Docker Image (read-only)
+  ├── Layer 1: Alpine base (/bin, /lib, /etc)
+  ├── Layer 2: curl installed (/usr/bin/curl)
+  └── Layer 3: app code (/app)
+
+Container filesystem
+  ├── lowerdirs: [Layer1, Layer2, Layer3]
+  ├── upperdir:  /var/lib/docker/overlay2/<container-id>/diff (writable)
+  └── merged:    what the container process sees as "/"
+
+File lookup
+  - Reads: check upperdir → then lowerdirs
+  - Writes: go to upperdir
+  - Deletes: whiteout in upperdir hides lowerdir file
+```
