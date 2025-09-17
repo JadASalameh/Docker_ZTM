@@ -153,18 +153,62 @@
 ## Images and layers
 
 * images are a collection of loosely connected read-only layers where each layer comprises one or more files.
+  
 * Docker takes care of stacking them and representing them as a single unified image.
  <p align="center">
   <img src="img1.png" alt="alt text" width="400" style="transform: translateX(-200px);" />
  </p>
 
+ * Example: Pull the following image
+   ```bash
+   docker pull node:latest
+   ```
+   * Output:
+     ```bash
+     latest: Pulling from library/ubuntu
+      952132ac251a: Pull complete
+      82659f8f1b76: Pull complete
+      c19118ca682d: Pull complete
+      8296858250fe: Pull complete
+      24e0251a0e2c: Pull complete
+      Digest: sha256:f4691c96e6bbaa99d...28ae95a60369c506dd6e6f6ab
+      Status: Downloaded newer image for node:latest
+      docker.io/node:latest
+     ```
+    * Each line ending with Pull complete represents a layer that Docker pulled.
+    * This image has five layers.
+  * Another way to see image layers is to inspect the image with the `docker inspect` command.
+    ```bash
+    docker inspect node:latest
+    ```
+    * Output:
+      ```bash
+      [
+          {
+            "Id": "sha256:bd3d4369ae.......fa2645f5699037d7d8c6b415a10",
+            "RepoTags": [
+              "node:latest"
+            <Snip>
+            "RootFS": {
+              "Type": "layers",
+              "Layers": [
+                "sha256:c8a75145fc...894129005e461a43875a094b93412",
+                "sha256:c6f2b330b6...7214ed6aac305dd03f70b95cdc610",
+                "sha256:055757a193...3a9565d78962c7f368d5ac5984998",
+                "sha256:4837348061...12695f548406ea77feb5074e195e3",
+                "sha256:0cad5e07ba...4bae4cfc66b376265e16c32a0aae9"
+              ]
+            }
+          }
+      ]
+      ```
+
+    * The trimmed output shows the five layers.
+    * However, it shows their `SHA256` hashes, which are different from the short IDs shown in the docker pull output.
 
 
-
-
-
-
-
+  * All Docker images start with a base layer.
+  * very time you add new content, Docker adds a new layer.
 
 
 
