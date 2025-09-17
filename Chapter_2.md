@@ -153,6 +153,17 @@
 ## Images and layers
 
 * images are a collection of loosely connected read-only layers where each layer comprises one or more files.
+* Docker takes care of stacking them and representing them as a single unified image.
+ <p align="center">
+  <img src="img1.png" alt="alt text" width="400" style="transform: translateX(-200px);" />
+ </p>
+
+
+
+
+
+
+
 
 
 
