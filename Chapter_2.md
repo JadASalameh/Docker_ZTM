@@ -1,6 +1,6 @@
-# Working with Images
+# Chapter 2: Working with Images
 
-### What is an image?
+## What is an image?
 
 * An image is a read-only package containing everything you need to run an application.
   
@@ -16,7 +16,7 @@
     * Docker stacks these layers and makes them look like a unified system.
  
 
-### More on Images
+## More on Images
 
 * images are like stopped containers.
   
@@ -34,7 +34,7 @@
     * You should not include non-essentials such as build tools or troubleshooting tools.
     * if the application doesn’t need it at run-time, the image doesn’t include it. We call these slim images.
 
-### Pulling images
+## Pulling images
 * A clean Docker installation has an empty `local repository`.
   
 * Local repository is an area on your local machine where Docker stores images for more convenient access.
@@ -71,7 +71,7 @@
 
 
 
-### Image registries
+## Image registries
 
 * We store images in centralized places called registries.
   
@@ -81,9 +81,76 @@
 * Docker Hub has the concept of official repositories that are home to images vetted and curated by Docker and the application vendor.
 
 
- ### Image naming and tagging
- 
+ ## Image naming and tagging
 
+ * The name of the image has the form: `<Registry>/<User/Org>/<Repository>:<image/tag>`
+   * Example: `docker.io/library/nginx:1.27-alpine`
+       *  Registry: `docker.io` (Docker Hub, default so you don't need to type it)
+       *  User/Org: `library` (official images live here).
+       *  Repository: `nginx`.
+       *  Tag: `1.27-alpine`
+       *  You normally just type `nginx:1.27-alpine` because docker.io/library is implied.
+ * Addressing images from official repositories is easy. All you need to supply is the repository name and image name separated by a colon.
+ * Sometimes we call the image name the tag.
+ * The format for a docker pull command pulling an image from an official repository is:
+    ```bash
+    docker pull <repository>:<tag>
+    ```
+     * Example_1:
+       ```bash
+        docker pull redis:latest
+       ```
+       * pulls the image tagged as latest from the top-level redis repository.
+     * Example_2:
+       ```bash
+       docker pull mongo:7.0.5
+       ```
+       * Pulls the image tagged as '7.0.5' from the official 'mongo' repository.
+
+     * Example_3:
+       ```bash
+       docker pull busybox:glibc
+       ```
+       * Pulls the image tagged as 'glibc' from the official 'busybox' repository.
+
+      
+     * Example_4:
+       ```bash
+       docker pull alpine
+       ```
+       * Pulls the image tagged as 'latest' from the official 'alpine' repository.
+
+ 
+ * Important Note: **Images tagged as latest are not guaranteed to be the most up-to-date in the repository.**
+ * The format for a docker pull command pulling an image from the docker registry but from a unofficial repositories is: `<User/Org>/<Repository>:<image/tag>`
+   * Example:
+     ```bash
+     docker pull nigelpoulton/tu-demo:v2
+     ```
+ * The format for a docker pull command pulling an image from a different registry is: `<Registry>/<User/Org>/<Repository>:<image/tag>`
+   * Example:
+     ```bash
+     docker pull ghcr.io/regclient/regsync:latest
+     ```
+     * Output:
+       ```bash
+       latest: Pulling from regclient/regsync
+        6f14f2b64ccf: Download complete
+        7746d6728537: Download complete
+        685af2c79c31: Download complete
+        4c377311167a: Download complete
+        662e9541e042: Download complete
+        Digest: sha256:149a95d47d6beed2a1404d7c3b00dddfa583a94836587ba8e3b4fe59853c1ece
+        Status: Downloaded newer image for ghcr.io/regclient/regsync:latest
+        ghcr.io/regclient/regsync:latest
+       ```
+
+     * Notice how the pull looks the same as it did with Docker Hub.
+     * This is because GHCR supports the OCI registry-spec and implements the Docker Registry v2 API.
+ * Note: **You can give a single image as many tags as you want.**
+
+
+## Images and layers
 
 
 
