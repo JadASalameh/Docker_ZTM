@@ -152,6 +152,7 @@
 
 ## Images and layers
 
+* images are a collection of loosely connected read-only layers where each layer comprises one or more files.
 
 
 
