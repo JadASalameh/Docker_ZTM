@@ -1,1 +1,92 @@
+# Working with Images
+
+### What is an image?
+
+* An image is a read-only package containing everything you need to run an application.
+  
+* This means they include application code, dependencies, a minimal set of OS constructs,and metadata.
+* You can start multiple containers from a single image.
+* The easiest way to get an image is to pull one from a registry
+* `Docker Hub` is the most common registry, and pulling an image downloads it to your local machine where Docker can use it to start one or more containers.
+* Other registries exist, and Docker works with them all.
+* Images are made by stacking independent layers and representing them as a single unified object.
+    * One layer might have the OS components
+    * another layer might have application dependencies
+    * another layer might have the application
+    * Docker stacks these layers and makes them look like a unified system.
+ 
+
+### More on Images
+
+* images are like stopped containers.
+  
+* You can stop a container and create a new image from it.
+* images are build-time constructs, whereas containers are run-time constructs.
+* To start a container from an image:
+    ```bash
+    docker run
+    ```
+* Once the container is running, the image and the container are bound.
+    * you cannot delete the image until you stop and delete the container.
+    * If multiple containers use the same image, you can only delete the image after you’ve deleted all the containers using it.
+* Containers are designed to run a single application or microservice.
+    * As such, they should only contain application code and dependencies.
+    * You should not include non-essentials such as build tools or troubleshooting tools.
+    * if the application doesn’t need it at run-time, the image doesn’t include it. We call these slim images.
+
+### Pulling images
+* A clean Docker installation has an empty `local repository`.
+  
+* Local repository is an area on your local machine where Docker stores images for more convenient access.
+* on Linux it’s usually located in `/var/lib/docker/<storage-driver>`.
+* However, it will be inside the Docker VM if you’re using Docker Desktop.
+* To inspect the images on your local repo, run this command:
+    ```bash
+    docker images
+    ```
+ * The process of getting images is called pulling.
+ * Run the following commands to pull the redis image and verify it exists in your local repository.
+     ```bash
+     docker pull redis
+     ```
+     Output:
+     ```
+     $ docker images
+      REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
+      ubuntu       latest    590e57acc18d   6 days ago     117MB
+      redis        latest    acb90ced0bd7   4 weeks ago    200MB
+      postgres     16        66a5efb5677f   4 weeks ago    637MB
+      nginx        latest    d5f28ef21aab   4 weeks ago    279MB
+      alpine       latest    4bcff63911fc   2 months ago   12.8MB
+     ```
+     * Docker made two assumptions when pulling the image.
+         * It assumed you wanted to pull the image tagged as latest.
+           
+         * It assumed you wanted to pull the image from Docker Hub.
+         * You can override both, but Docker will use these as defaults if you don’t override them.
+      * The Redis image has eight layers. However, Docker only pulled seven layers because it already had a local copy of one of them.
+        
+         * This is because my system runs the Portainer Docker Desktop extension, which is based on an image that shares a common layer with the Redis image.
+      * images can share layers, and Docker is clever enough only to pull the layers it doesn’t already have
+
+
+
+### Image registries
+
+* We store images in centralized places called registries.
+  
+* The job of a registry is to securely store images and make them easy to access from different environments.
+* So we build the image, push it to a registery, and then that image can be pulled from the registery.
+* Image registries contain one or more image repositories, and image repositories contain one or more images.
+* Docker Hub has the concept of official repositories that are home to images vetted and curated by Docker and the application vendor.
+
+
+ ### Image naming and tagging
+ 
+
+
+
+
+
+
 
