@@ -156,7 +156,7 @@
   
 * Docker takes care of stacking them and representing them as a single unified image.
  <p align="center">
-  <img src="img1.png" alt="alt text" width="400" style="transform: translateX(-200px);" />
+  <img src="Images/img1.png" alt="alt text" width="400" style="transform: translateX(-200px);" />
  </p>
 
  * Example: Pull the following image
@@ -208,7 +208,14 @@
 
 
   * All Docker images start with a base layer.
-  * very time you add new content, Docker adds a new layer.
+  * Every time you add new content, Docker adds a new layer.
+  * Example:
+    * Base layer: official Ubuntu 24.04 image (corporate policy requirement).
+    * Second layer: install Python on top of Ubuntu.
+    * Third layer: add application source code, creating the final image with three layers. 
+    <p align="center">
+     <img src="Images/img2.png" alt="alt text" width="400" style="transform: translateX(-200px);" />
+    </p>
 
 
 
