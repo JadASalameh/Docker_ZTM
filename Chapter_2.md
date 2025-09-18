@@ -356,9 +356,109 @@ File lookup
   - Deletes: whiteout in upperdir hides lowerdir file
 ```
 
-## Sharing image layers 
-* images can share layers, leading to efficiencies in space and performance.
-   <p align="center">
+## Sharing image layers    
+* Docker images are made of multiple read-only layers.
+* When you pull or build images, Docker stores all these layers in a local repository on your machine.
+* Each layer is identified by a unique hash (like 4f4fb700ef54).
+* Different images can share common layers
+  <p align="center">
     <img src="Images/img5.png" alt="alt text" width="400" style="transform: translateX(-200px);" />
    </p>
-    
+* For example, the protainer image and the redis:latest image both reuse the layer `4f4fb700ef54`
+* Docker only stores that layer once locally, even though multiple images reference it.
+* This design saves disk space and bandwidth:
+  * Pulling a new image only downloads the layers you don’t already have.
+  * Building a new image can reuse existing layers from previous builds.
+* So the diagram shows:
+  * The middle column = your local repository of all unique layers.
+  * The sides = two different images (protainer and redis), each defined as an ordered stack of layers.
+  * The arrows = how both images reference and share layers from the same local repository.
+ 
+## Pulling images by digest
+
+### 1. Tags (Reminder)
+* A tag is just a human-friendly label for an image.
+* Problem: tags are mutable → you can reuse the same tag for a different image.
+* If you push a new image with tag golftrack:1.5, it overwrites the old one.
+* Now you can’t easily tell which containers are running the old vs new golftrack:1.5.
+
+### 2. Digests
+* A digest is a unique cryptographic hash (SHA256) of the image’s contents.
+* They are immutable.
+* If anything inside the image changes (even one byte), the digest changes.
+* Two different images can never have the same digest.
+* That’s why digests are reliable identifiers for images.
+* If you pull alpine:latest today, you get one image.
+* If you pull alpine:latest next year, you’ll probably get a newer image (same tag, different content).
+* But if you pull by digest, you’ll always get the exact same image every time.
+* To see digests of images you already have:
+  ```bash
+  docker images --digests alpine
+  ```
+  * The digest uniquely identifies this alpine:latest image.
+* Find digest without pulling (using buildx imagetools):
+  ```bash
+  docker buildx imagetools inspect nigelpoulton/k8sbook:latest
+  ```
+  * output: `Digest: sha256:13dd59a0c74e9a1478...bce2e14b`
+* To pull by digest:
+  ```bash
+  docker pull nigelpoulton/k8sbook@sha256:13dd59a0c74e9a1478...bce2e14b
+  ```
+  * This guarantees you pull that exact version, not whatever latest points to at the moment.
+
+ ## Image hashes and layer hashes
+
+ * images are just a loose collection of independent layers.
+ * This means an image is just a manifest file with some metadata and a list of layers.
+ * The actual application and all its dependencies live in the layers.
+ * However, layers are fully independent and have no concept of being part of an image.
+ * With this in mind, images and layers have their own digests as follows:
+   * Images digests are a crypto hash of the image manifest file
+   * Layer digests are a crypto hash of the layer’s contents
+* This means all changes to layers or image manifests result in new hashes, giving us an easy and reliable way to know if changes have been made.
+
+## Multi-architecture Images
+
+* Tags like alpine:latest may point to different builds for different CPU architectures (x86_64, ARM, PowerPC, etc.). Without multi-arch support, users had to manually choose the right image for their system.
+* Docker registries now support multi-architecture images:
+  * A manifest list points to multiple manifests (one per architecture).
+  * Each manifest lists the layers for that specific architecture build.
+  * Example: docker pull alpine:latest automatically gives the AMD64 image on an AMD64 host, or the ARM image on an ARM host.
+* Tools:
+  ```bash
+  docker buildx imagetools inspect <image>
+  ``` 
+    * shows the manifest list and supported architectures.
+  ```bash
+  docker manifest inspect <image>
+  ```
+    * similar output, useful for scripting.
+  
+ *  docker buildx supports creating images for multiple architectures:
+    *  Emulation (via QEMU): works locally but is slow, no shared cache.
+    *  Docker Build Cloud: fast, native builds in the cloud, shared cache, integrates with GitHub Actions/CI (paid service).
+  
+
+## Deleting Images
+
+* You can delete images using the docker rmi command
+* Deleting images removes them from your local repository and they’ll no longer show up in your docker images commands.
+* The operation also deletes all directories on your local filesystem containing layer data.
+* However, Docker won’t delete layers shared by multiple images until you delete all images that reference them.
+* You can delete images by name, short ID, or SHA. You can also delete multiple images with the same command.
+* The following command deletes three images — one by name, one by short ID, and one by SHA.
+  ```bash
+  docker rmi redis:latest af111729d35a sha256:c5b1261d...f8e1ad6b
+  ```
+* Docker will prevent the delete operation if the image is being used by a container or referenced by more than one tag
+* However, you can force the operation with the -f flag, but you should do so with caution, as forcing Docker to delete an image in use by a container will untag the image and leave it on the system as a dangling image.
+* A handy way to delete all images is to pass a list of all local image IDs to the docker rmi command
+  ```bash
+  docker rmi $(docker images -q) -f
+  ```
+  * `docker images -q` returns a list of local image IDs
+
+
+
+
