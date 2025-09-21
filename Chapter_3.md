@@ -169,6 +169,145 @@
 
 ## Connecting to a container
 
+* You can use the docker exec command to execute commands in running containers, and it has two modes:
+ * Interactive: Interactive exec sessions connect your terminal to a shell process in the container and behave like remote SSH sessions.
+ * Remote execution: Remote execution mode lets you send commands to a running container and prints the output to your local terminal.
+* Run the following command to start an interactive exec session by creating a new `shell process` (sh) inside the webserver container and connecting your terminal to it.
+  ```bash
+  docker exec -it webserver sh
+  ```
+  * The `-it`flag makes it an interactive exec session
+  * `sh argument` starts a new sh process inside the container. `sh` is a minimal shell program installed in the container.
+  * your terminal is now connected to the shell process inside the container.
+
+* Try executing a few common Linux commands. Some will work, and some won’t.
+* This is because container images are usually optimized to be lightweight and don’t have all of the normal commands and packages installed.
+
+
+## Inspecting container processes
+
+* Most containers only run a single process.
+* This is the container’s main app process and is always PID 1.
+* Example: Run a ps command to see the processes running in your container. You’ll need to be connected to the exec session from the previous section for these commands to work.
+  ```bash
+  ps
+  ```
+  * The output shows three processes:
+   * PID 1 is the main application process running the Node.js web app
+   * PID 13 is the shell process your interactive exec session is connected to
+   * PID 22 is the ps command you just ran 
+  
+  * The ps process terminated as soon as it displayed the output, and the sh process will terminate when you exit the exec session. This means the only long-running process is PID 1 running the Node app.
+    
+
+* If you kill the container’s main process (PID 1), you’ll also kill the container.
+* To Quit the the exec session and return to your local terminal:
+  ```bash
+  exit
+  ```
+* Run another docker exec command without specifying the -it flags. Format: `docker exec <container> <command>`. This will remotely execute the command without creating an interactive session.
+  ```bash
+  docker exec webserver ps
+  ```
+## The docker inspect command 
+
+* The `inspect` command retrieves full details of the running webserver container.
+* Example:
+  ```bash
+  docker inspect webserver
+  ```
+## Writing data to a container
+
+* In this section, you’ll exec onto the webserver container and edit the web server configuration to display a new message on the home page.
+* **WARNING:** This section is for demonstration purposes only. In the real
+world, you shouldn’t change live containers like this. Any time you need to
+change a live container, you should create and test a new container with the
+required changes and then replace the existing container with the new one.
+
+* Example walk through:
+ * Open a new interactive exec session to the webserver container
+   ```bash
+   docker exec -it webserver sh
+   ```
+* Recall: The container runs a simple Node.js web app that uses the views/home.pug file to build the app’s home page.
+* Run the following command to open the home.pug file in the vi editor:
+  ```bash
+  vi views/home.pug
+  ```
+ * Press the i key to put vi into insert mode
+ * Use the arrow keys to navigate to line 8
+ * Use your delete key to delete the text after the h1 tag on line 8
+ * Type a new message of your choice
+ * Press the escape key to exit insert mode and return to command mode
+ * type :wq and press enter save your changes and exit (:wq is short for write and quit)
+
+
+## Stopping, restarting, and deleting a container
+
+* Stopping:
+  ```bash
+  docker stop webserver
+  ```
+  * The container no longer shows in the list of running containers.
+  * However, you can see it if you run the same command with the `-a` flag to show all containers, including stopped ones.
+
+* Restarting:
+  ```bash
+  docker restart webserver
+  ```
+   * The container has saved your changes!
+
+* Deleting:
+  ```bash
+  docker rm webserver -f
+  ```
+  * The `-f` flag forces the operation and doesn’t allow the app the usual 10-second grace period to flush buffers and grace- fully quit.
+  * All signs of the container are gone and you cannot restart it.
+  * You can start a new instance by executing another docker run command and specifying the same image.
+  * but it won’t have the changes you made!!
+
+## Self-healing containers with restart policies
+
+* Container restart policies are a simple form of self-healing that allows the local Docker Engine to automatically restart failed containers.
+* You apply restart policies per container, and Docker supports the following four policies:
+  * no (default)
+  * on-failure
+  * always
+  * unless-stopped 
+* The following table shows how each policy reacts to different scenarios. A **Y** indicates the policy will attempt a container restart, whereas an **N** indicates it won’t.
+    <p align="center">
+        <img src="Images/table.png" alt="alt text" width="600" style="transform: translateX(-200px);" />
+    </p>
+
+    * `Non-zero` exit codes indicate a failure occurred. 
+    * `Zero exit` codes indicate the container exited normally without an error.
+
+* Example:
+   * starting a new interactive container with the `--restart` always flag and telling it to run a `shell` process.
+     ```bash
+     docker run --name neversaydie -it --restart always alpine sh
+     ```
+     * Your terminal will automatically connect to the shell process inside the container
+   * Type `exit` to kill the shell process and return to your local terminal.
+   * This will cause the container to exit with a zero exit code, indicating a normal exit without any failures.
+   * According to the previous table, the always restart policy should automatically restart the container.
+   * Run a docker `ps` command to see if this happened.
+     * Output:
+       ```bash
+       CONTAINER ID   IMAGE     COMMAND           CREATED              STATUS         PORTS        NAMES
+       03d1b0ab6e1e   alpine     "sh"              About a minute ago  Up 3 seconds                neversaydie
+       ``` 
+     * The container is running as expected.
+     * However, you can see it was created 1 minute ago but has only been running for 3 seconds.
+     * This is because you forced it to exit when you killed the shell process, and then Docker automatically restarted it.
+     * It’s also important to know that Docker restarted the same container and didn’t create a new one.
+     * In fact, if you run a docker inspect against it, you’ll see the RestartCount has been incremented to 1
+
+   * An interesting feature of the --restart always policy is that if you stop a container with docker stop and then restart the Docker daemon, Docker will restart the container when the daemon comes up.
+   * If you don’t want this behavior, you should try the `unless-stopped` policy.
+
+
+
 
 
 
