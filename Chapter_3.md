@@ -11,9 +11,9 @@
 * Containers should only run a single process and we use them to build microservices apps.
   * For example, an application with four features (microservices), such as a web server, auth, catalog, and store, will have four containers
     * one running the web server
-    * one running the web server
-    * one running the web server
-    * one running the web server
+    * one running the auth
+    * one running the catalog
+    * one running the store
    
 
 ## Containers vs VMs
@@ -305,6 +305,7 @@ required changes and then replace the existing container with the new one.
 
    * An interesting feature of the --restart always policy is that if you stop a container with docker stop and then restart the Docker daemon, Docker will restart the container when the daemon comes up.
    * If you don’t want this behavior, you should try the `unless-stopped` policy.
+
 
 
 
